@@ -4,9 +4,10 @@ Proyecto Next.js (App Router) + TypeScript + Tailwind v4, construido a partir
 del export de Stitch AI ("stitch_backoffice_de_gestión_de_personal"), con la
 navegación por sidebar + submenú "Gráficos" ya conectada. El login (única
 parte con lógica real hasta ahora) tiene un backend NestJS aparte en
-`backend/`, con arquitectura limpia por capas, contra una base PostgreSQL
-(`sigsesa`) creada a mano — ver `backend/README` implícito en su código y el
-documento de análisis del módulo de login.
+`sigsesa-adminBE/` (repositorio de Git propio), con arquitectura limpia por
+capas, contra una base PostgreSQL (`sigsesa`) creada a mano — ver
+`sigsesa-adminBE/README` implícito en su código y el documento de análisis
+del módulo de login.
 
 ## Cómo correrlo
 
@@ -14,8 +15,8 @@ Este proyecto son **dos servidores separados** que hay que levantar juntos:
 Postgres corriendo localmente, el backend NestJS, y el frontend Next.js.
 
 ```bash
-# 1. Backend (necesita backend/.env con tu DATABASE_URL - ver backend/.env.example)
-cd backend
+# 1. Backend (necesita sigsesa-adminBE/.env con tu DATABASE_URL - ver sigsesa-adminBE/.env.example)
+cd sigsesa-adminBE
 pnpm install
 pnpm run dev        # http://localhost:3001
 

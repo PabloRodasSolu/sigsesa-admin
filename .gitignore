@@ -44,6 +44,5 @@ next-env.d.ts
 /AGENTS.md
 /CLAUDE.md
 
-# backend (NestJS)
-backend/node_modules
-backend/dist
+# sigsesa-adminBE (backend NestJS - vive en su propio repositorio de Git aparte)
+sigsesa-adminBE/
