@@ -1,27 +1,59 @@
+import { fetchResumenGeneral } from "@/lib/dashboard-server";
+import { estadoEmpleadoLabel } from "@/lib/novedades-api";
+
+// Estas 3 secciones (barras, ranking, meta) son cifras de Utilidad
+// (financieras) que hoy no viven en ningun lado del sistema nuevo (esa base
+// es Contabilidad_SIGSESA, aparte) - se dejan en 0 a proposito (no con datos
+// de ejemplo inventados) para no confundir en una presentacion de avance.
+// Total de Clientes, Personal Operativo, la dona y los cupos SI son reales.
 const DIVISIONES = [
-  { label: "Otros Clientes", value: 128075.82, pct: 21.2, color: "#2b83ff" },
-  { label: "Institucional", value: 143768.84, pct: 23.8, color: "#7c4dff" },
-  { label: "Banrural", value: 209885.1, pct: 34.7, color: "#00b389" },
-  { label: "Anexos", value: 12591.67, pct: 2.1, color: "#8bd450" },
-  { label: "ESURAM", value: 110852.0, pct: 18.3, color: "#ff8a3d" },
+  { label: "Otros Clientes", value: 0, pct: 0, color: "#2b83ff" },
+  { label: "Institucional", value: 0, pct: 0, color: "#7c4dff" },
+  { label: "Banrural", value: 0, pct: 0, color: "#00b389" },
+  { label: "Anexos", value: 0, pct: 0, color: "#8bd450" },
+  { label: "ESURAM", value: 0, pct: 0, color: "#ff8a3d" },
 ];
-const DIVISIONES_MAX_PCT = Math.max(...DIVISIONES.map((d) => d.pct));
+// || 1 evita dividir entre 0 mientras todos los pct sigan en 0.
+const DIVISIONES_MAX_PCT = Math.max(...DIVISIONES.map((d) => d.pct)) || 1;
 
 const RANKING = [
-  { name: "Residenciales Amayito (Motoristas)", value: 3345.23 },
-  { name: "Finca San Sebastián (Jefe de grupo)", value: 1051.67 },
-  { name: "Quiché Save The Children International", value: 743.0 },
-  { name: "Share Guatemala Huehuetenango", value: 658.35 },
-  { name: "Share Guatemala Cobán", value: 658.35 },
-  { name: "Super Autos Jack II", value: 578.66 },
+  { name: "Residenciales Amayito (Motoristas)", value: 0 },
+  { name: "Finca San Sebastián (Jefe de grupo)", value: 0 },
+  { name: "Quiché Save The Children International", value: 0 },
+  { name: "Share Guatemala Huehuetenango", value: 0 },
+  { name: "Share Guatemala Cobán", value: 0 },
+  { name: "Super Autos Jack II", value: 0 },
 ];
-const RANKING_MAX = RANKING[0].value;
+const RANKING_MAX = RANKING[0].value || 1;
 
 function formatQ(value: number) {
   return `Q${value.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function ResumenGeneralPage() {
+const ESTADO_COLORS: Record<string, string> = {
+  disponible: "#198754",
+  no_disponible: "#001f3f",
+  ausente: "#2b83ff",
+  baja: "#ba1a1a",
+};
+const ESTADO_ORDEN = ["disponible", "no_disponible", "ausente", "baja"];
+const CIRCUNFERENCIA = 2 * Math.PI * 40;
+
+export default async function ResumenGeneralPage() {
+  const resumen = await fetchResumenGeneral();
+
+  const totalEstados = resumen.distribucionPorEstado.reduce((sum, d) => sum + d.cantidad, 0) || 1;
+  const arcosBase = ESTADO_ORDEN.map((estado) => {
+    const cantidad = resumen.distribucionPorEstado.find((d) => d.estado === estado)?.cantidad ?? 0;
+    return { estado, cantidad, dash: (cantidad / totalEstados) * CIRCUNFERENCIA, color: ESTADO_COLORS[estado] };
+  });
+  // offset = -(suma de los arcos anteriores) - se calcula aparte, sin
+  // reasignar un acumulador, para no mutar nada durante el render.
+  const arcos = arcosBase.map((a, i) => ({
+    ...a,
+    offset: -arcosBase.slice(0, i).reduce((sum, b) => sum + b.dash, 0),
+  }));
+
   return (
       <div className="max-w-7xl mx-auto space-y-space-lg">
         {/* KPI Row */}
@@ -34,10 +66,10 @@ export default function ResumenGeneralPage() {
               </p>
             </div>
             <p className="text-headline-lg font-headline-lg text-on-surface mt-2">
-              84
+              {resumen.totalClientes}
             </p>
             <p className="text-label-sm font-label-sm text-secondary mt-1">
-              Divisiones: 5
+              Clientes activos
             </p>
           </div>
           <div className="bg-surface border border-outline-variant rounded-xl p-space-md shadow-[0_4px_4px_rgba(0,0,0,0.02)]">
@@ -48,10 +80,10 @@ export default function ResumenGeneralPage() {
               </p>
             </div>
             <p className="text-headline-lg font-headline-lg text-on-tertiary-container mt-2">
-              1,770
+              {resumen.personalOperativo}
             </p>
             <p className="text-label-sm font-label-sm text-secondary mt-1">
-              Cobertura Nacional
+              Empleados activos
             </p>
           </div>
           <div className="bg-surface border border-outline-variant rounded-xl p-space-md shadow-[0_4px_4px_rgba(0,0,0,0.02)]">
@@ -62,7 +94,7 @@ export default function ResumenGeneralPage() {
               </p>
             </div>
             <p className="text-headline-lg font-headline-lg text-on-surface mt-2">
-              Q 7,262,081.15
+              Q 0.00
             </p>
           </div>
           <div className="bg-primary-container text-on-primary-container border border-primary-container rounded-xl p-space-md shadow-[0_4px_4px_rgba(0,0,0,0.02)]">
@@ -73,7 +105,7 @@ export default function ResumenGeneralPage() {
               </p>
             </div>
             <p className="text-headline-lg font-headline-lg text-on-primary mt-2">
-              Q 605,173.43
+              Q 0.00
             </p>
           </div>
         </div>
@@ -86,64 +118,41 @@ export default function ResumenGeneralPage() {
               Distribución de Personal Operativo
             </h3>
             <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-              {/* Placeholder for actual donut chart */}
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" fill="none" r="40" stroke="#e1e3e4" strokeWidth="20"></circle>
-                <circle cx="50" cy="50" fill="none" r="40" stroke="#001f3f" strokeDasharray="160 251" strokeDashoffset="0" strokeWidth="20"></circle>
-                {/* Banrural ~64% */}
-                <circle cx="50" cy="50" fill="none" r="40" stroke="#6f88ad" strokeDasharray="40 251" strokeDashoffset="-160" strokeWidth="20"></circle>
-                {/* Otros ~16% */}
-                <circle cx="50" cy="50" fill="none" r="40" stroke="#d4e3ff" strokeDasharray="30 251" strokeDashoffset="-200" strokeWidth="20"></circle>
-                {/* Inst ~12% */}
-                <circle cx="50" cy="50" fill="none" r="40" stroke="#004493" strokeDasharray="21 251" strokeDashoffset="-230" strokeWidth="20"></circle>
-                {/* ESURAM ~8% */}
+                <circle cx="50" cy="50" fill="none" r="40" stroke="var(--color-surface-variant)" strokeWidth="20"></circle>
+                {arcos.map((a) => (
+                  <circle
+                    key={a.estado}
+                    cx="50"
+                    cy="50"
+                    fill="none"
+                    r="40"
+                    stroke={a.color}
+                    strokeDasharray={`${a.dash} ${CIRCUNFERENCIA}`}
+                    strokeDashoffset={a.offset}
+                    strokeWidth="20"
+                  ></circle>
+                ))}
               </svg>
               <div className="absolute flex flex-col items-center justify-center">
                 <span className="text-label-sm font-label-sm text-on-surface-variant uppercase">
                   Total AS
                 </span>
                 <span className="text-headline-lg font-headline-lg text-on-surface">
-                  1,770
+                  {resumen.personalOperativo}
                 </span>
               </div>
             </div>
             <div className="mt-8 space-y-3">
-              <div className="flex justify-between items-center text-body-md font-body-md">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-primary-container"></span>
-                  Banrural Agencias
+              {arcos.map((a) => (
+                <div key={a.estado} className="flex justify-between items-center text-body-md font-body-md">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></span>
+                    {estadoEmpleadoLabel(a.estado)}
+                  </div>
+                  <span className="font-bold">{a.cantidad}</span>
                 </div>
-                <span className="font-bold">
-                  1,147
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-body-md font-body-md">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-on-primary-container"></span>
-                  Otros Clientes
-                </div>
-                <span className="font-bold">
-                  292
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-body-md font-body-md">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-primary-fixed"></span>
-                  Institucionales
-                </div>
-                <span className="font-bold">
-                  215
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-body-md font-body-md">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-on-tertiary-fixed-variant"></span>
-                  ESURAM
-                </div>
-                <span className="font-bold">
-                  84
-                </span>
-              </div>
+              ))}
             </div>
           </div>
           {/* Bar Chart Area */}
@@ -221,7 +230,7 @@ export default function ResumenGeneralPage() {
                     Banrural (Agencias + Anexos)
                   </p>
                   <p className="text-headline-lg font-headline-lg text-on-primary mt-1">
-                    Q2,669,721.23
+                    Q0.00
                   </p>
                 </div>
                 <div className="h-px w-full bg-on-primary opacity-20"></div>
@@ -230,12 +239,49 @@ export default function ResumenGeneralPage() {
                     Otros Clientes
                   </p>
                   <p className="text-headline-lg font-headline-lg text-on-primary mt-1">
-                    Q1,536,909.83
+                    Q0.00
                   </p>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+        {/* Cupos por oficina - dato real */}
+        <div className="bg-surface border border-outline-variant rounded-xl shadow-[0_4px_4px_rgba(0,0,0,0.02)] overflow-hidden">
+          <h3 className="flex items-center gap-2 text-headline-sm font-headline-sm text-on-surface p-space-md border-b border-outline-variant bg-surface-bright">
+            <span className="material-symbols-outlined text-lg text-primary">store</span>
+            Cupos por Oficina
+          </h3>
+          {resumen.cupos.length === 0 ? (
+            <p className="p-space-md font-body-md text-body-md text-on-surface-variant">
+              Todavía no hay oficinas registradas.
+            </p>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-lowest border-b border-outline-variant">
+                  <th className="px-space-md py-2 font-label-sm text-label-sm text-on-surface-variant">Distrito</th>
+                  <th className="px-space-md py-2 font-label-sm text-label-sm text-on-surface-variant">Oficina</th>
+                  <th className="px-space-md py-2 font-label-sm text-label-sm text-on-surface-variant text-right">
+                    Cupo disponible
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {resumen.cupos.map((c) => (
+                  <tr key={`${c.distritoName}-${c.oficinaName}`} className="border-b border-outline-variant last:border-0">
+                    <td className="px-space-md py-2 font-body-md text-body-md text-on-surface-variant">{c.distritoName}</td>
+                    <td className="px-space-md py-2 font-body-md text-body-md text-on-surface">{c.oficinaName}</td>
+                    <td
+                      className={`px-space-md py-2 font-body-md text-body-md text-right font-bold ${c.cupo < 0 ? "text-error" : "text-on-surface"}`}
+                    >
+                      {c.cupo}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
   );

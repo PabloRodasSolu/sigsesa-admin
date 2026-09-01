@@ -1,14 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: reemplazar por la llamada real de autenticación
-    router.push("/novedades");
+    setError(null);
+    setLoading(true);
+
+    const form = new FormData(e.currentTarget);
+    const username = String(form.get("username") ?? "");
+    const password = String(form.get("password") ?? "");
+    const rememberMe = form.get("remember-me") === "on";
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, rememberMe }),
+      });
+
+      if (res.ok) {
+        const next = new URLSearchParams(window.location.search).get("next") ?? "/novedades";
+        router.push(next);
+        router.refresh();
+        return;
+      }
+
+      if (res.status === 429) {
+        setError("Demasiados intentos. Intenta de nuevo en unos minutos.");
+      } else {
+        const body = (await res.json().catch(() => null)) as { message?: string } | null;
+        setError(body?.message ?? "Usuario o contraseña incorrectos");
+      }
+    } catch {
+      setError("No se pudo conectar con el servidor. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -35,6 +69,12 @@ export default function LoginPage() {
         {/* Form Card */}
         <div className="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] p-space-lg">
           <form onSubmit={handleSubmit} className="space-y-space-md">
+            {error && (
+              <div className="rounded-lg bg-error-container text-on-error-container font-body-md text-body-md px-4 py-3">
+                {error}
+              </div>
+            )}
+
             <div>
               <label
                 className="block font-label-md text-label-md text-on-surface mb-space-xs"
@@ -54,6 +94,8 @@ export default function LoginPage() {
                   name="username"
                   placeholder="Ingrese su usuario"
                   type="text"
+                  autoComplete="username"
+                  required
                 />
               </div>
             </div>
@@ -77,6 +119,8 @@ export default function LoginPage() {
                   name="password"
                   placeholder="••••••••"
                   type="password"
+                  autoComplete="current-password"
+                  required
                 />
               </div>
             </div>
@@ -108,10 +152,11 @@ export default function LoginPage() {
 
             <div className="pt-space-sm">
               <button
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm font-label-md text-label-md text-on-primary bg-primary-container hover:bg-on-primary-fixed-variant focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-fixed-dim transition-colors h-[40px] items-center"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm font-label-md text-label-md text-on-primary bg-primary-container hover:bg-on-primary-fixed-variant focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-fixed-dim transition-colors h-[40px] items-center disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
+                disabled={loading}
               >
-                Ingresar
+                {loading ? "Ingresando..." : "Ingresar"}
               </button>
             </div>
           </form>

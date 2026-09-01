@@ -2,17 +2,32 @@
 
 Proyecto Next.js (App Router) + TypeScript + Tailwind v4, construido a partir
 del export de Stitch AI ("stitch_backoffice_de_gestión_de_personal"), con la
-navegación por sidebar + submenú "Gráficos" ya conectada.
+navegación por sidebar + submenú "Gráficos" ya conectada. El login (única
+parte con lógica real hasta ahora) tiene un backend NestJS aparte en
+`backend/`, con arquitectura limpia por capas, contra una base PostgreSQL
+(`sigsesa`) creada a mano — ver `backend/README` implícito en su código y el
+documento de análisis del módulo de login.
 
 ## Cómo correrlo
 
+Este proyecto son **dos servidores separados** que hay que levantar juntos:
+Postgres corriendo localmente, el backend NestJS, y el frontend Next.js.
+
 ```bash
+# 1. Backend (necesita backend/.env con tu DATABASE_URL - ver backend/.env.example)
+cd backend
 pnpm install
-pnpm run dev
+pnpm run dev        # http://localhost:3001
+
+# 2. Frontend, en otra terminal, desde la raiz del repo
+pnpm install
+pnpm run dev        # http://localhost:3000
 ```
 
-Abre http://localhost:3000 — te redirige a `/login`. Al enviar el formulario
-(sin validación real todavía) te lleva a `/novedades`.
+Abre http://localhost:3000 — si no tienes sesión, te redirige a `/login` de
+verdad (contra el backend, con bloqueo por intentos fallidos y todo). El
+`middleware`/`proxy.ts` protege el resto de rutas y las páginas leen el
+usuario real a través de headers que deja la validación de sesión.
 
 ## Estructura
 
@@ -30,7 +45,6 @@ Abre http://localhost:3000 — te redirige a `/login`. Al enviar el formulario
 
 ## Pendiente (lógica real, no incluida todavía)
 
-- Autenticación real en `/login` (ahora mismo el submit solo redirige)
 - Conectar los `<select>` de Distrito/Oficina, el editor de texto y "GRABAR"
   a un backend/API real
 - Los datos de las 7 pantallas de Gráficos y del Log de Novedades son estáticos

@@ -1,4 +1,17 @@
-export default function Header() {
+"use client";
+
+import { useRouter } from "next/navigation";
+
+export default function Header({ displayName }: { displayName: string }) {
+  const router = useRouter();
+  const initial = displayName.trim().charAt(0).toUpperCase() || "?";
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <header className="fixed top-0 right-0 h-header_height z-40 bg-surface border-b border-outline-variant flex items-center justify-between px-container-margin w-[calc(100%-240px)] ml-auto">
       <div className="flex items-center bg-surface-container-lowest border border-outline-variant rounded-full px-4 py-2 w-64 focus-within:border-primary-fixed-dim transition-colors">
@@ -39,9 +52,21 @@ export default function Header() {
           >
             <span className="material-symbols-outlined">help</span>
           </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="hover:text-primary transition-opacity active:opacity-70"
+            aria-label="Cerrar sesión"
+            title={`Cerrar sesión (${displayName})`}
+          >
+            <span className="material-symbols-outlined">logout</span>
+          </button>
         </div>
-        <div className="h-8 w-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-sm font-bold border border-outline-variant cursor-pointer">
-          A
+        <div
+          className="h-8 w-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-sm font-bold border border-outline-variant"
+          title={displayName}
+        >
+          {initial}
         </div>
       </div>
     </header>
